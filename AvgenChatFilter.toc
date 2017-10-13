@@ -1,0 +1,8 @@
+## Interface: 70100
+## Title: Инструменты Авгена - Чат фильтр
+## Notes: Чат фильтр, и другие исправления чата.
+## Author: Авген
+## SavedVariables: AvgenChatFilterDB
+
+data.xml
+core.lua
