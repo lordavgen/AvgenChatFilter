@@ -159,7 +159,7 @@ end
 local function CorrectKeyLinkInMessage(message)
     if message:match("Hitem:138019") then
 	
-		local link = message:match("|cffa335ee|Hitem:138019.*|h|r")
+		local link = message:match("|c........|Hitem:138019.*|h|r")
 		tipscan:SetOwner(UIParent, "ANCHOR_NONE")
 		tipscan:SetHyperlink(link)
 		tipscan:Show()
