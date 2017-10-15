@@ -5,5 +5,5 @@
 - Избавляет от флуда продавцов золота в личные сообщения
 - Скрывает анонсы сервера "Анонс бг,*Autobroadcast"
 - Упрощает закупку ресурсами у торговца в Даларане
-![alt text](https://image.prntscr.com/image/qMoyVwI7SrW6lLMwnCgWVA.png)
+(https://image.prntscr.com/image/qMoyVwI7SrW6lLMwnCgWVA.png)
 - Подсвечивает в чате слова ппг, ИК
