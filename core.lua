@@ -4,7 +4,6 @@
 -- Автор: Авген
 --
 local addon = LibStub("AceAddon-3.0"):NewAddon("AvgenChatFilter","AceConsole-3.0","AceEvent-3.0")
--- Avgen
 
 --// Подготовка
 local MyModData = {}
@@ -12,6 +11,7 @@ local defaultsBD = {
 	profile = {
 		settings = {
 			KeyFix = true,
+			shortkeyname = true,
 			HideServerAnons = true,
 			HideGoldSellersInWisp = true,
 			FindTextInChat = true,
@@ -45,11 +45,20 @@ local locbd = {
 		"ппгер",
 		"пп гер",
 	},
+	sokr = {
+		["Ключ: Утроба душ"] = "Ключ: УД",
+		["Ключ: Казематы Стражей"] = "Ключ: КС",
+		["Ключ: Око Азшары"] = "Ключ: Око",
+		["Ключ: Логово Нелтариона"] = "Ключ: ЛН",
+		["Ключ: Чертоги Доблести"] = "Ключ: ЧД",
+		["Ключ: Чаща Темного Сердца"] = "Ключ: ЧТС",
+		["Ключ: Крепость Черной Ладьи"] = "Ключ: КЧЛ",
+	},
 }
 local tipscan = CreateFrame("GameTooltip", "TooltipScanKey",nil,"GameTooltipTemplate")
 
 local options = { 
-    name = "AvgenChatFilter",
+    name = "Авген Чат Фильтр",
     handler = addon,
     type = "group",
     args = {
@@ -87,6 +96,13 @@ local options = {
 			type = "toggle",
             get = "GetDalaranMerchantFix",
             set = "SetDalaranMerchantFix",
+        },
+        enable5 = {
+            name = "Короткие имена ключей",
+			desc = "пример: 'Ключ: Чаща Темного Сердца'\n'Ключ: ЧТС'.",
+			type = "toggle",
+            get = "GetShortKeyName",
+            set = "SetShortKeyName",
         },
     },
 }
@@ -154,13 +170,15 @@ local function CorrectKeyLinkInMessage(message)
 		
 		if name then
 			if txt1 then
-				local newlink
+				local newname = name
+				if addon.db.profile.settings.shortkeyname then
+					newname = locbd.sokr[name] or name
+				end
 				if txt1 == "Израсходован" then
-					
-					newmessage = message:gsub(link:match("%[(.+)%]"), name..' '..txt2:match('%d+'))
+					newmessage = message:gsub(link:match("%[(.+)%]"), newname..' '..txt2:match('%d+'))
 					return newmessage:gsub(link:match("|c(.*)|H"), "ff7E7E7E")
 				else
-					return message:gsub(link:match("%[(.+)%]"), name..' '..txt1:match('%d+'))
+					return message:gsub(link:match("%[(.+)%]"), newname ..' '..txt1:match('%d+'))
 				end
 			end
 		else
@@ -173,8 +191,12 @@ end
 function addon.Ahook_ChatEdit_OnUpdate(text)
 	if addon.db.profile.settings.KeyFix then
 		local editframe = ChatEdit_GetActiveWindow()
-		local text = editframe:GetText()
-		editframe:SetText(CorrectKeyLinkInMessage(text))
+		if editframe then
+			local text = editframe:GetText()
+			if text then
+				editframe:SetText(CorrectKeyLinkInMessage(text))
+			end
+		end
 	end
 end
 
@@ -185,37 +207,68 @@ function addon:_merchantmod_ed()
  	local _e_b = CreateFrame('EditBox', 'FIXkuzumap_Popup', StaticPopup1, "InputBoxTemplate")
  	_e_b:SetWidth(30)
  	_e_b:SetHeight(20)
- 	_e_b:SetPoint('CENTER',30,20)
+ 	_e_b:SetPoint('CENTER',-60,25)
  	_e_b:SetMaxLetters(3)
  	_e_b:SetNumeric(true)
  	_e_b:SetAutoFocus(false)
  	_e_b:SetCursorPosition(0)
  	
  	_e_b:SetScript("OnShow",function(self)
-
- 		self:SetText("0")
- 		itemcount = tonumber(StaticPopup1ItemFrameCount:GetText())
+		local itemcount
+		if StaticPopup1ItemFrameCount:IsVisible() then
+			itemcount = tonumber(StaticPopup1ItemFrameCount:GetText())
+		else
+			itemcount = 1
+		end
+ 		self:SetText(tostring(itemcount))
+		StaticPopup1Text:SetText("Сколько вы хотите купить?")
+		
+		local setitemcount = FIXkuzumap_Popup:GetNumber()
+		local x,y = math.modf(setitemcount/itemcount)
+		if x == 0 or y ~= 0 then
+			x = x + 1
+		end
+		FIXkuzumap_Popup.text_right:SetText(" = " .. tostring(x) .. " x |cff0070dd|Hitem:124124::::::::110:65:512:::110:::|h[Кровь Саргераса]|h|r")
 		FIXkuzumap_Popup:SetFocus()
+ 	end)
+ 	
+ 	_e_b:SetScript("OnChar",function(self, key)
+ 		
+		local itemcount = tonumber(StaticPopup1ItemFrameCount:GetText()) or 1
+		local setitemcount = FIXkuzumap_Popup:GetNumber()
+		local x,y = math.modf(setitemcount/itemcount)
+		if x == 0 or y ~= 0 then
+			x = x + 1
+		end
+		FIXkuzumap_Popup.text_right:SetText(" = " .. tostring(x) .. " x |cff0070dd|Hitem:124124::::::::110:65:512:::110:::|h[Кровь Саргераса]|h|r")
+ 		
  	end)
  	
  	_e_b:SetScript("OnKeyDown",function(self, key)
  		
+		-- local itemcount = tonumber(StaticPopup1ItemFrameCount:GetText()) or 1
+		-- local setitemcount = FIXkuzumap_Popup:GetNumber()
+		-- local x,y = math.modf(setitemcount/itemcount)
+		-- if x == 0 or y ~= 0 then
+			-- x = x + 1
+		-- end
+		-- FIXkuzumap_Popup.text_right:SetText(" = " .. tostring(x) .. " x |cff0070dd|Hitem:124124::::::::110:65:512:::110:::|h[Кровь Саргераса]|h|r")
  		if key == 'ENTER' then
  			StaticPopup1Button1:Click()
  		end
  		
  	end)
  	
- 	_e_b.text_left = _e_b:CreateFontString()
- 	_e_b.text_left:SetPoint("CENTER", _e_b, -65, 0)
- 	_e_b.text_left:SetSize(150, 20)
- 	_e_b.text_left:SetFont("Fonts\\ARIALN.TTF", 13)
- 	_e_b.text_left:SetText('Сколько обменять: ')
+ 	-- _e_b.text_left = _e_b:CreateFontString()
+ 	-- _e_b.text_left:SetPoint("CENTER", _e_b, -65, 0)
+ 	-- _e_b.text_left:SetSize(150, 20)
+ 	-- _e_b.text_left:SetFont("Fonts\\ARIALN.TTF", 13)
+ 	-- _e_b.text_left:SetText('Сколько обменять: ')
  	
  	_e_b.text_right = _e_b:CreateFontString()
- 	_e_b.text_right:SetPoint("CENTER", _e_b, 40, 0)
- 	_e_b.text_right:SetSize(100, 20)
- 	_e_b.text_right:SetFont("Fonts\\ARIALN.TTF", 13)
+ 	_e_b.text_right:SetPoint("LEFT", _e_b,"LEFT", 10, 0)
+ 	_e_b.text_right:SetSize(200, 20)
+ 	_e_b.text_right:SetFont("Fonts\\ARIALN.TTF", 14)
  	
  	_e_b:Hide()
 	
@@ -237,7 +290,7 @@ function addon:_merchantmod_ed()
 
 	StaticPopup1Button1:HookScript("OnClick", function(self)
 		if addon.db.profile.settings.DalaranMerchantFix then
-			local itemcount = tonumber(StaticPopup1ItemFrameCount:GetText())
+			local itemcount = tonumber(StaticPopup1ItemFrameCount:GetText()) or 1
 			local setitemcount = FIXkuzumap_Popup:GetNumber()
 			local itemname = StaticPopup1ItemFrameText:GetText()
 			
@@ -325,4 +378,12 @@ end
 
 function addon:SetDalaranMerchantFix(info, newValue)
     addon.db.profile.settings.DalaranMerchantFix = newValue
+end
+
+function addon:GetShortKeyName(info)
+    return addon.db.profile.settings.shortkeyname
+end
+
+function addon:SetShortKeyName(info, newValue)
+    addon.db.profile.settings.shortkeyname = newValue
 end
