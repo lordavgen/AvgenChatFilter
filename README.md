@@ -6,4 +6,5 @@
 - Скрывает анонсы сервера "Анонс бг,*Autobroadcast"
 - Подсвечивает в чате слова ппг, ИК
 - Упрощает закупку ресурсами у торговца в Даларане
-[alt text](https://image.prntscr.com/image/qMoyVwI7SrW6lLMwnCgWVA.png)
+
+![alt text](https://image.prntscr.com/image/qMoyVwI7SrW6lLMwnCgWVA.png)
