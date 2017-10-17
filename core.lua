@@ -54,6 +54,17 @@ local locbd = {
 		["Ключ: Чаща Темного Сердца"] = "Ключ: ЧТС",
 		["Ключ: Крепость Черной Ладьи"] = "Ключ: КЧЛ",
 	},
+	CKLIM = {
+		link = nil,
+		name = nil,
+		txt1 = nil,
+		txt2 = nil,
+		newname = nil,
+		olditemname = nil,
+	},
+	FTIM = {
+		srtartS = nil,
+	},
 }
 local tipscan = CreateFrame("GameTooltip", "TooltipScanKey",nil,"GameTooltipTemplate")
 
@@ -142,14 +153,13 @@ end
 
 function addon.FindTextInMessage(_, _, message, ...)
 	if addon.db.profile.settings.FindTextInChat then
-		local srtartS, endS = nil, nil
+		locbd.CKLIM.srtartS = nil
 		for _, word in ipairs(locbd.findStrings) do
-			srtartS, endS = nil, nil
-			srtartS, endS = message:find(word,1,true)
-			if srtartS then
-				local newmessage = message:gsub(word,string.format("|cffFF5400%s|r",tostring(word)))
+			locbd.CKLIM.srtartS = nil
+			locbd.CKLIM.srtartS = message:find(word,1,true)
+			if locbd.CKLIM.srtartS then
 				PlaySound("AuctionWindowOpen")
-				return false, newmessage, ...
+				return false, message:gsub(word,string.format("|cffFF5400%s|r",tostring(word))), ...
 			end
 		end
 	end
@@ -159,26 +169,42 @@ end
 local function CorrectKeyLinkInMessage(message)
     if message:match("Hitem:138019") then
 	
-		local link = message:match("|c........|Hitem:138019.*|h|r")
+		locbd.CKLIM.link = message:match("|c........|Hitem:138019.*|h|r")
 		tipscan:SetOwner(UIParent, "ANCHOR_NONE")
-		tipscan:SetHyperlink(link)
+		tipscan:SetHyperlink(locbd.CKLIM.link)
 		tipscan:Show()
-		local name = _G['TooltipScanKeyTextLeft1']:GetText()
-		local txt1 = _G['TooltipScanKeyTextLeft2']:GetText()
-		local txt2 = _G['TooltipScanKeyTextLeft3']:GetText()
+		locbd.CKLIM.name = _G['TooltipScanKeyTextLeft1']:GetText()
+		locbd.CKLIM.txt1 = _G['TooltipScanKeyTextLeft2']:GetText()
+		locbd.CKLIM.txt2 = _G['TooltipScanKeyTextLeft3']:GetText()
 		tipscan:Hide()
 		
-		if name then
-			if txt1 then
-				local newname = name
+		if locbd.CKLIM.name then
+			if locbd.CKLIM.txt1 then
+				locbd.CKLIM.newname = locbd.CKLIM.name
 				if addon.db.profile.settings.shortkeyname then
-					newname = locbd.sokr[name] or name
+					locbd.CKLIM.newname = locbd.sokr[locbd.CKLIM.name] or locbd.CKLIM.name
 				end
-				if txt1 == "Израсходован" then
-					newmessage = message:gsub(link:match("%[(.+)%]"), newname..' '..txt2:match('%d+'))
-					return newmessage:gsub(link:match("|c(.*)|H"), "ff7E7E7E")
+				if locbd.CKLIM.txt1 == "Израсходован" then
+					locbd.CKLIM.olditemname = locbd.CKLIM.link:match("%[(.+)%]")
+					if locbd.CKLIM.olditemname:find("]") then
+						PlaySound("AuctionWindowOpen")
+						PlaySound("AuctionWindowOpen")
+						PlaySound("AuctionWindowOpen")
+						print(string.format("|cffFF5400%s|r: %s",tostring("OldItemName error"),tostring(locbd.CKLIM.olditemname)))
+						return message
+					end
+					newmessage = message:gsub(locbd.CKLIM.olditemname, locbd.CKLIM.newname..' '..locbd.CKLIM.txt2:match('%d+'))
+					return newmessage:gsub(locbd.CKLIM.link:match("|c(.*)|H"), "ff7E7E7E")
 				else
-					return message:gsub(link:match("%[(.+)%]"), newname ..' '..txt1:match('%d+'))
+					locbd.CKLIM.olditemname = locbd.CKLIM.link:match("%[(.+)%]")
+					if locbd.CKLIM.olditemname:find("]") then
+						PlaySound("AuctionWindowOpen")
+						PlaySound("AuctionWindowOpen")
+						PlaySound("AuctionWindowOpen")
+						print(string.format("|cffFF5400%s|r: %s",tostring("OldItemName error"),tostring(locbd.CKLIM.olditemname)))
+						return message
+					end
+					return message:gsub(locbd.CKLIM.olditemname, locbd.CKLIM.newname ..' '..locbd.CKLIM.txt1:match('%d+'))
 				end
 			end
 		else
@@ -216,7 +242,7 @@ function addon:_merchantmod_ed()
  	_e_b:SetScript("OnShow",function(self)
 		local itemcount
 		if StaticPopup1ItemFrameCount:IsVisible() then
-			itemcount = tonumber(StaticPopup1ItemFrameCount:GetText())
+			itemcount = tonumber(StaticPopup1ItemFrameCount:GetText()) or 1
 		else
 			itemcount = 1
 		end
@@ -234,7 +260,12 @@ function addon:_merchantmod_ed()
  	
  	_e_b:SetScript("OnChar",function(self, key)
  		
-		local itemcount = tonumber(StaticPopup1ItemFrameCount:GetText()) or 1
+		local itemcount
+		if StaticPopup1ItemFrameCount:IsVisible() then
+			itemcount = tonumber(StaticPopup1ItemFrameCount:GetText()) or 1
+		else
+			itemcount = 1
+		end
 		local setitemcount = FIXkuzumap_Popup:GetNumber()
 		local x,y = math.modf(setitemcount/itemcount)
 		if x == 0 or y ~= 0 then
@@ -246,24 +277,11 @@ function addon:_merchantmod_ed()
  	
  	_e_b:SetScript("OnKeyDown",function(self, key)
  		
-		-- local itemcount = tonumber(StaticPopup1ItemFrameCount:GetText()) or 1
-		-- local setitemcount = FIXkuzumap_Popup:GetNumber()
-		-- local x,y = math.modf(setitemcount/itemcount)
-		-- if x == 0 or y ~= 0 then
-			-- x = x + 1
-		-- end
-		-- FIXkuzumap_Popup.text_right:SetText(" = " .. tostring(x) .. " x |cff0070dd|Hitem:124124::::::::110:65:512:::110:::|h[Кровь Саргераса]|h|r")
- 		if key == 'ENTER' then
+		if key == 'ENTER' then
  			StaticPopup1Button1:Click()
  		end
  		
  	end)
- 	
- 	-- _e_b.text_left = _e_b:CreateFontString()
- 	-- _e_b.text_left:SetPoint("CENTER", _e_b, -65, 0)
- 	-- _e_b.text_left:SetSize(150, 20)
- 	-- _e_b.text_left:SetFont("Fonts\\ARIALN.TTF", 13)
- 	-- _e_b.text_left:SetText('Сколько обменять: ')
  	
  	_e_b.text_right = _e_b:CreateFontString()
  	_e_b.text_right:SetPoint("LEFT", _e_b,"LEFT", 10, 0)
@@ -276,7 +294,6 @@ function addon:_merchantmod_ed()
 		if addon.db.profile.settings.DalaranMerchantFix then
 			local sttext = StaticPopup1Text:GetText()
 			if sttext:match("Hitem:124124") then
-				-- local itemcount = tonumber(StaticPopup1ItemFrameCount:GetText())
 				FIXkuzumap_Popup:Show()
 			end
 		end
@@ -290,7 +307,12 @@ function addon:_merchantmod_ed()
 
 	StaticPopup1Button1:HookScript("OnClick", function(self)
 		if addon.db.profile.settings.DalaranMerchantFix then
-			local itemcount = tonumber(StaticPopup1ItemFrameCount:GetText()) or 1
+			local itemcount
+			if StaticPopup1ItemFrameCount:IsVisible() then
+				itemcount = tonumber(StaticPopup1ItemFrameCount:GetText()) or 1
+			else
+				itemcount = 1
+			end
 			local setitemcount = FIXkuzumap_Popup:GetNumber()
 			local itemname = StaticPopup1ItemFrameText:GetText()
 			
