@@ -166,7 +166,7 @@ function addon.FindTextInMessage(_, _, message, ...)
 	return false
 end
 
-local function gsubname(x)
+local function CorrectKeyNameLink(x)
 	locbd.CKLIM.link = x
 	tipscan:SetOwner(UIParent, "ANCHOR_NONE")
 	tipscan:SetHyperlink(locbd.CKLIM.link)
@@ -189,17 +189,8 @@ local function gsubname(x)
 				return x:gsub('(%[.-%])', '['..locbd.CKLIM.newname..' '..locbd.CKLIM.txt1:match('%d+')..']')
 			end
 		end
-	else
-		return x
 	end
 	return x
-end
-
-local function CorrectKeyLinkInMessage(message)
-    if message:match("Hitem:138019") then
-		return message:gsub('(|c........|Hitem:138019.*|h|r)', gsubname)
-    end
-	return message
 end
 
 function addon.Ahook_ChatEdit_OnUpdate(text)
@@ -208,7 +199,7 @@ function addon.Ahook_ChatEdit_OnUpdate(text)
 		if editframe then
 			local text = editframe:GetText()
 			if text then
-				editframe:SetText(CorrectKeyLinkInMessage(text))
+				editframe:SetText(text:gsub('(|c........|Hitem:138019.*|h|r)', CorrectKeyNameLink))
 			end
 		end
 	end
@@ -344,7 +335,7 @@ function addon.AvgenChatFilter(frame, event, message, ...)
 	end
 	if addon.db.profile.settings.KeyFix then
 		if message:match("Hitem:138019") then
-			return false, CorrectKeyLinkInMessage(message), ...
+			return false, message:gsub('(|c........|Hitem:138019.*|h|r)', CorrectKeyNameLink), ...
 		end
 	end
 	return false
