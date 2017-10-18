@@ -166,50 +166,38 @@ function addon.FindTextInMessage(_, _, message, ...)
 	return false
 end
 
+local function gsubname(x)
+	locbd.CKLIM.link = x
+	tipscan:SetOwner(UIParent, "ANCHOR_NONE")
+	tipscan:SetHyperlink(locbd.CKLIM.link)
+	tipscan:Show()
+	locbd.CKLIM.name = _G['TooltipScanKeyTextLeft1']:GetText()
+	locbd.CKLIM.txt1 = _G['TooltipScanKeyTextLeft2']:GetText()
+	locbd.CKLIM.txt2 = _G['TooltipScanKeyTextLeft3']:GetText()
+	tipscan:Hide()
+	
+	if locbd.CKLIM.name then
+		if locbd.CKLIM.txt1 then
+			locbd.CKLIM.newname = locbd.CKLIM.name
+			if addon.db.profile.settings.shortkeyname then
+				locbd.CKLIM.newname = locbd.sokr[locbd.CKLIM.name] or locbd.CKLIM.name
+			end
+			if locbd.CKLIM.txt1 == "Израсходован" then
+				newmessage = x:gsub('(%[.-%])', '['..locbd.CKLIM.newname..' '..locbd.CKLIM.txt2:match('%d+')..']')
+				return newmessage:gsub('(|c.-|H)', "|cff7E7E7E|H")
+			else
+				return x:gsub('(%[.-%])', '['..locbd.CKLIM.newname..' '..locbd.CKLIM.txt1:match('%d+')..']')
+			end
+		end
+	else
+		return x
+	end
+	return x
+end
+
 local function CorrectKeyLinkInMessage(message)
     if message:match("Hitem:138019") then
-	
-		locbd.CKLIM.link = message:match("|c........|Hitem:138019.*|h|r")
-		tipscan:SetOwner(UIParent, "ANCHOR_NONE")
-		tipscan:SetHyperlink(locbd.CKLIM.link)
-		tipscan:Show()
-		locbd.CKLIM.name = _G['TooltipScanKeyTextLeft1']:GetText()
-		locbd.CKLIM.txt1 = _G['TooltipScanKeyTextLeft2']:GetText()
-		locbd.CKLIM.txt2 = _G['TooltipScanKeyTextLeft3']:GetText()
-		tipscan:Hide()
-		
-		if locbd.CKLIM.name then
-			if locbd.CKLIM.txt1 then
-				locbd.CKLIM.newname = locbd.CKLIM.name
-				if addon.db.profile.settings.shortkeyname then
-					locbd.CKLIM.newname = locbd.sokr[locbd.CKLIM.name] or locbd.CKLIM.name
-				end
-				if locbd.CKLIM.txt1 == "Израсходован" then
-					locbd.CKLIM.olditemname = locbd.CKLIM.link:match("%[(.+)%]")
-					if locbd.CKLIM.olditemname:find("]") then
-						PlaySound("AuctionWindowOpen")
-						PlaySound("AuctionWindowOpen")
-						PlaySound("AuctionWindowOpen")
-						print(string.format("|cffFF5400%s|r: %s",tostring("OldItemName error"),tostring(locbd.CKLIM.olditemname)))
-						return message
-					end
-					newmessage = message:gsub(locbd.CKLIM.olditemname, locbd.CKLIM.newname..' '..locbd.CKLIM.txt2:match('%d+'))
-					return newmessage:gsub(locbd.CKLIM.link:match("|c(.*)|H"), "ff7E7E7E")
-				else
-					locbd.CKLIM.olditemname = locbd.CKLIM.link:match("%[(.+)%]")
-					if locbd.CKLIM.olditemname:find("]") then
-						PlaySound("AuctionWindowOpen")
-						PlaySound("AuctionWindowOpen")
-						PlaySound("AuctionWindowOpen")
-						print(string.format("|cffFF5400%s|r: %s",tostring("OldItemName error"),tostring(locbd.CKLIM.olditemname)))
-						return message
-					end
-					return message:gsub(locbd.CKLIM.olditemname, locbd.CKLIM.newname ..' '..locbd.CKLIM.txt1:match('%d+'))
-				end
-			end
-		else
-			return message
-		end
+		return message:gsub('(|c........|Hitem:138019.*|h|r)', gsubname)
     end
 	return message
 end
