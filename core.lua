@@ -55,12 +55,10 @@ local locbd = {
 		["Ключ: Крепость Черной Ладьи"] = "Ключ: КЧЛ",
 	},
 	CKLIM = {
-		link = nil,
 		name = nil,
 		txt1 = nil,
 		txt2 = nil,
 		newname = nil,
-		olditemname = nil,
 	},
 	FTIM = {
 		srtartS = nil,
@@ -167,13 +165,16 @@ function addon.FindTextInMessage(_, _, message, ...)
 end
 
 local function CorrectKeyNameLink(x)
-	locbd.CKLIM.link = x
-	tipscan:SetOwner(UIParent, "ANCHOR_NONE")
-	tipscan:SetHyperlink(locbd.CKLIM.link)
+	tipscan:SetOwner(UIParent, "CENTER")
+	tipscan:SetHyperlink(x)
 	tipscan:Show()
+	locbd.CKLIM.name = nil
+	locbd.CKLIM.txt1 = nil
+	locbd.CKLIM.txt2 = nil
 	locbd.CKLIM.name = _G['TooltipScanKeyTextLeft1']:GetText()
 	locbd.CKLIM.txt1 = _G['TooltipScanKeyTextLeft2']:GetText()
 	locbd.CKLIM.txt2 = _G['TooltipScanKeyTextLeft3']:GetText()
+	-- tipscan:ClearLines()
 	tipscan:Hide()
 	
 	if locbd.CKLIM.name then
@@ -183,8 +184,8 @@ local function CorrectKeyNameLink(x)
 				locbd.CKLIM.newname = locbd.sokr[locbd.CKLIM.name] or locbd.CKLIM.name
 			end
 			if locbd.CKLIM.txt1 == "Израсходован" then
-				newmessage = x:gsub('(%[.-%])', '['..locbd.CKLIM.newname..' '..locbd.CKLIM.txt2:match('%d+')..']')
-				return newmessage:gsub('(|c.-|H)', "|cff7E7E7E|H")
+				x = x:gsub('(%[.-%])', '['..locbd.CKLIM.newname..' '..locbd.CKLIM.txt2:match('%d+')..']')
+				return x:gsub('(|c.-|H)', "|cff7E7E7E|H")
 			else
 				return x:gsub('(%[.-%])', '['..locbd.CKLIM.newname..' '..locbd.CKLIM.txt1:match('%d+')..']')
 			end
@@ -286,12 +287,8 @@ function addon:_merchantmod_ed()
 
 	StaticPopup1Button1:HookScript("OnClick", function(self)
 		if addon.db.profile.settings.DalaranMerchantFix then
-			local itemcount
-			if StaticPopup1ItemFrameCount:IsVisible() then
-				itemcount = tonumber(StaticPopup1ItemFrameCount:GetText()) or 1
-			else
-				itemcount = 1
-			end
+		
+			itemcount = tonumber(StaticPopup1ItemFrameCount:GetText()) or 1
 			local setitemcount = FIXkuzumap_Popup:GetNumber()
 			local itemname = StaticPopup1ItemFrameText:GetText()
 			
