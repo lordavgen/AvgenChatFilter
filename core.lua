@@ -63,6 +63,11 @@ local locbd = {
 	FTIM = {
 		srtartS = nil,
 	},
+	merch = {
+		CostBay = nil,
+		ItemCount = nil,
+		ItemName = nil,
+	},
 }
 local tipscan = CreateFrame("GameTooltip", "TooltipScanKey",nil,"GameTooltipTemplate")
 
@@ -208,8 +213,6 @@ end
 
 function addon:_merchantmod_ed()
 
- 	local itemcount
-
  	local _e_b = CreateFrame('EditBox', 'FIXkuzumap_Popup', StaticPopup1, "InputBoxTemplate")
  	_e_b:SetWidth(30)
  	_e_b:SetHeight(20)
@@ -234,7 +237,10 @@ function addon:_merchantmod_ed()
 		if x == 0 or y ~= 0 then
 			x = x + 1
 		end
-		FIXkuzumap_Popup.text_right:SetText(" = " .. tostring(x) .. " x |cff0070dd|Hitem:124124::::::::110:65:512:::110:::|h[Кровь Саргераса]|h|r")
+		locbd.merch.ItemCount = itemcount
+		locbd.merch.ItemName = StaticPopup1ItemFrameText:GetText()
+		locbd.merch.CostBay = x
+		FIXkuzumap_Popup.text_right:SetText(" = " .. tostring(x) .. " x |cff0070dd[Кровь Саргераса]|r")
 		FIXkuzumap_Popup:SetFocus()
  	end)
  	
@@ -251,23 +257,23 @@ function addon:_merchantmod_ed()
 		if x == 0 or y ~= 0 then
 			x = x + 1
 		end
+		locbd.merch.ItemCount = itemcount
+		locbd.merch.ItemName = StaticPopup1ItemFrameText:GetText()
+		locbd.merch.CostBay = x
 		FIXkuzumap_Popup.text_right:SetText(" = " .. tostring(x) .. " x |cff0070dd|Hitem:124124::::::::110:65:512:::110:::|h[Кровь Саргераса]|h|r")
  		
  	end)
  	
  	_e_b:SetScript("OnKeyDown",function(self, key)
- 		
-		if key == 'ENTER' then
+ 		if key == 'ENTER' then
  			StaticPopup1Button1:Click()
  		end
- 		
  	end)
  	
  	_e_b.text_right = _e_b:CreateFontString()
  	_e_b.text_right:SetPoint("LEFT", _e_b,"LEFT", 10, 0)
  	_e_b.text_right:SetSize(200, 20)
  	_e_b.text_right:SetFont("Fonts\\ARIALN.TTF", 14)
- 	
  	_e_b:Hide()
 	
 	StaticPopup1:HookScript("OnShow", function(self)
@@ -287,23 +293,21 @@ function addon:_merchantmod_ed()
 
 	StaticPopup1Button1:HookScript("OnClick", function(self)
 		if addon.db.profile.settings.DalaranMerchantFix then
-		
-			itemcount = tonumber(StaticPopup1ItemFrameCount:GetText()) or 1
-			local setitemcount = FIXkuzumap_Popup:GetNumber()
-			local itemname = StaticPopup1ItemFrameText:GetText()
 			
-			if itemcount and itemname and setitemcount then
-				if setitemcount > itemcount then
-					local x,y = math.modf(setitemcount/itemcount)
-					if y == 0 and x ~= 0 then
-						x = x - 1
-					end
-					for i=1,100 do 
-						if itemname == GetMerchantItemInfo(i) then 
-							for g=1, x do 
-								BuyMerchantItem(i,itemcount)
+			if locbd.merch.CostBay then
+				
+				if locbd.merch.ItemCount and locbd.merch.ItemName then
+					if locbd.merch.CostBay > 1 then
+						for i=1,100 do 
+							if locbd.merch.ItemName == GetMerchantItemInfo(i) then 
+								for g=1, locbd.merch.CostBay-1 do 
+									BuyMerchantItem(i,locbd.merch.ItemCount)
+								end
+								locbd.merch.CostBay = nil
+								locbd.merch.ItemName = nil
+								locbd.merch.ItemCount = nil
+								break
 							end
-							break
 						end
 					end
 				end
