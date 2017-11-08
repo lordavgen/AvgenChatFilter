@@ -16,6 +16,7 @@ local defaultsBD = {
 			HideGoldSellersInWisp = true,
 			FindTextInChat = true,
 			DalaranMerchantFix = true,
+			GuildWispFix = true,
 		},
 	}
 }
@@ -118,6 +119,13 @@ local options = {
             get = "GetShortKeyName",
             set = "SetShortKeyName",
         },
+        enable6 = {
+            name = "Шепот гильдии",
+			desc = "Фиксирует шепот только по имени, без реалма.",
+			type = "toggle",
+            get = "GetGuildWispFix",
+            set = "SetGuildWispFix",
+        },
     },
 }
 --\\ Конец подготовки
@@ -139,13 +147,16 @@ function addon:OnEnable()
 	ChatFrame_AddMessageEventFilter("CHAT_MSG_WHISPER", addon.AvgenChatFilter)
 	ChatFrame_AddMessageEventFilter("CHAT_MSG_GUILD", addon.AvgenChatFilter)
 	ChatFrame_AddMessageEventFilter("CHAT_MSG_PARTY", addon.AvgenChatFilter)
+	ChatFrame_AddMessageEventFilter("CHAT_MSG_PARTY_LEADER", addon.AvgenChatFilter)
 	ChatFrame_AddMessageEventFilter("CHAT_MSG_SAY", addon.AvgenChatFilter)
 	ChatFrame_AddMessageEventFilter("CHAT_MSG_YELL", addon.AvgenChatFilter)
 	ChatFrame_AddMessageEventFilter("CHAT_MSG_RAID", addon.AvgenChatFilter)
+	ChatFrame_AddMessageEventFilter("CHAT_MSG_RAID_LEADER", addon.AvgenChatFilter)
 	
 	ChatFrame_AddMessageEventFilter("CHAT_MSG_CHANNEL",addon.FindTextInMessage)
 	
 	hooksecurefunc("ChatEdit_InsertLink",addon.Ahook_ChatEdit_OnUpdate)
+	hooksecurefunc("ChatEdit_UpdateHeader",addon.Ahook_ChatFrame_SendTell)
 	
 	addon:_merchantmod_ed()
 end
@@ -179,7 +190,6 @@ local function CorrectKeyNameLink(x)
 	locbd.CKLIM.name = _G['TooltipScanKeyTextLeft1']:GetText()
 	locbd.CKLIM.txt1 = _G['TooltipScanKeyTextLeft2']:GetText()
 	locbd.CKLIM.txt2 = _G['TooltipScanKeyTextLeft3']:GetText()
-	-- tipscan:ClearLines()
 	tipscan:Hide()
 	
 	if locbd.CKLIM.name then
@@ -206,6 +216,20 @@ function addon.Ahook_ChatEdit_OnUpdate(text)
 			local text = editframe:GetText()
 			if text then
 				editframe:SetText(text:gsub('(|c........|Hitem:138019.*|h|r)', CorrectKeyNameLink))
+			end
+		end
+	end
+end
+
+function addon.Ahook_ChatFrame_SendTell(text)
+	if addon.db.profile.settings.GuildWispFix then
+		local f = ChatEdit_GetActiveWindow()
+		if f then
+			if f:GetAttribute("chatType") == "WHISPER" then
+				local name = (_G[f:GetName().."Header"]:GetText()):match('.- (.+)-')
+				if name then
+					ChatFrame_SendTell(name) 
+				end
 			end
 		end
 	end
@@ -388,4 +412,12 @@ end
 
 function addon:SetShortKeyName(info, newValue)
     addon.db.profile.settings.shortkeyname = newValue
+end
+
+function addon:GetGuildWispFix(info)
+    return addon.db.profile.settings.GuildWispFix
+end
+
+function addon:SetGuildWispFix(info, newValue)
+	addon.db.profile.settings.GuildWispFix = newValue
 end
