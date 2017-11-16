@@ -17,6 +17,7 @@ local defaultsBD = {
 			FindTextInChat = true,
 			DalaranMerchantFix = true,
 			GuildWispFix = true,
+			SellBood = false,
 		},
 	}
 }
@@ -77,55 +78,76 @@ local options = {
     handler = addon,
     type = "group",
     args = {
-        enable = {
-            name = "Мифические ключи",
-			desc = "Исправляет отображение мифических ключей.",
-			type = "toggle",
-            get = "GetKeyFix",
-            set = "SetKeyFix",
-        },
-        enable1 = {
-            name = "Анонсы сервера",
-			desc = "Скрывает анонсы сервера (Анонс бг,Autobroadcast).",
-			type = "toggle",
-            get = "GetHideServerAnons",
-            set = "SetHideServerAnons",
-        },
-        enable2 = {
-            name = "Торговцы золотом",
-			desc = "Скрывает личные сообщения торговцев золотом.",
-			type = "toggle",
-            get = "GetHideGoldSellersInWisp",
-            set = "SetHideGoldSellersInWisp",
-        },
-        enable3 = {
-            name = "Подсвечивать слова",
-			desc = "Подсвечивает слова ппг, ИК.\nИзменение слов в разработке.",
-			type = "toggle",
-            get = "GetFindTextInChat",
-            set = "SetFindTextInChat",
-        },
-        enable4 = {
-            name = "Торговец Даларана",
-			desc = "Упрощает закупку ресурсами, у торговца в Даларане.",
-			type = "toggle",
-            get = "GetDalaranMerchantFix",
-            set = "SetDalaranMerchantFix",
-        },
-        enable5 = {
-            name = "Короткие имена ключей",
-			desc = "пример: 'Ключ: Чаща Темного Сердца'\n'Ключ: ЧТС'.",
-			type = "toggle",
-            get = "GetShortKeyName",
-            set = "SetShortKeyName",
-        },
-        enable6 = {
-            name = "Шепот гильдии",
-			desc = "Фиксирует шепот только по имени, без реалма.",
-			type = "toggle",
-            get = "GetGuildWispFix",
-            set = "SetGuildWispFix",
-        },
+		tradedalaran = {
+			name = "Торговец Даларана",
+			handler = addon,
+			type = "group",
+			args = {
+				enable1 = {
+					name = "Включить",
+					desc = "Упрощает закупку ресурсами, у торговца в Даларане.",
+					type = "toggle",
+					get = "GetDalaranMerchantFix",
+					set = "SetDalaranMerchantFix",
+				},
+				enable2 = {
+					name = "Продавать кровь",
+					desc = "Меняет логику обмена.\nТеперь вы указываете сколько обменять крови, а не сколько купить предметов.",
+					type = "toggle",
+					get = "GetSellBood",
+					set = "SetSellBood",
+				},
+			}
+		},
+		chatfunc = {
+			name = "Функции чата",
+			handler = addon,
+			type = "group",
+			args = {
+				enable = {
+					name = "Мифические ключи",
+					desc = "Исправляет отображение мифических ключей.",
+					type = "toggle",
+					get = "GetKeyFix",
+					set = "SetKeyFix",
+				},
+				enable5 = {
+					name = "Короткие имена ключей",
+					desc = "пример: 'Ключ: Чаща Темного Сердца'\n'Ключ: ЧТС'.",
+					type = "toggle",
+					get = "GetShortKeyName",
+					set = "SetShortKeyName",
+				},
+				enable1 = {
+					name = "Анонсы сервера",
+					desc = "Скрывает анонсы сервера (Анонс бг,Autobroadcast).",
+					type = "toggle",
+					get = "GetHideServerAnons",
+					set = "SetHideServerAnons",
+				},
+				enable2 = {
+					name = "Торговцы золотом",
+					desc = "Скрывает личные сообщения торговцев золотом.",
+					type = "toggle",
+					get = "GetHideGoldSellersInWisp",
+					set = "SetHideGoldSellersInWisp",
+				},
+				enable3 = {
+					name = "Подсвечивать слова",
+					desc = "Подсвечивает слова ппг, ИК.\nИзменение слов в разработке.",
+					type = "toggle",
+					get = "GetFindTextInChat",
+					set = "SetFindTextInChat",
+				},
+				enable6 = {
+					name = "Шепот гильдии",
+					desc = "Фиксирует шепот только по имени, без реалма.",
+					type = "toggle",
+					get = "GetGuildWispFix",
+					set = "SetGuildWispFix",
+				},
+			}
+		},
     },
 }
 --\\ Конец подготовки
@@ -253,18 +275,30 @@ function addon:_merchantmod_ed()
 		else
 			itemcount = 1
 		end
- 		self:SetText(tostring(itemcount))
-		StaticPopup1Text:SetText("Сколько вы хотите купить?")
-		
-		local setitemcount = FIXkuzumap_Popup:GetNumber()
-		local x,y = math.modf(setitemcount/itemcount)
-		if x == 0 or y ~= 0 then
-			x = x + 1
+ 		
+		if addon.db.profile.settings.SellBood then
+			StaticPopup1Text:SetText("Сколько |cff0070dd[Кровь Саргераса]|r обменять?")
+			self:SetText(1)
+			locbd.merch.ItemCount = itemcount
+			locbd.merch.ItemName = StaticPopup1ItemFrameText:GetText()
+			locbd.merch.CostBay = 1
+			FIXkuzumap_Popup.text_right:SetText(" = " .. tostring(itemcount) .. " предметов.")
+		else
+			StaticPopup1Text:SetText("Сколько вы хотите купить?")
+			self:SetText(tostring(itemcount))
+			
+			local setitemcount = FIXkuzumap_Popup:GetNumber()
+			local x,y = math.modf(setitemcount/itemcount)
+			if x == 0 or y ~= 0 then
+				x = x + 1
+			end
+			locbd.merch.ItemCount = itemcount
+			locbd.merch.ItemName = StaticPopup1ItemFrameText:GetText()
+			locbd.merch.CostBay = x
+			FIXkuzumap_Popup.text_right:SetText(" = " .. tostring(x) .. " x |cff0070dd[Кровь Саргераса]|r")
 		end
-		locbd.merch.ItemCount = itemcount
-		locbd.merch.ItemName = StaticPopup1ItemFrameText:GetText()
-		locbd.merch.CostBay = x
-		FIXkuzumap_Popup.text_right:SetText(" = " .. tostring(x) .. " x |cff0070dd[Кровь Саргераса]|r")
+		
+		
 		FIXkuzumap_Popup:SetFocus()
  	end)
  	
@@ -277,14 +311,21 @@ function addon:_merchantmod_ed()
 			itemcount = 1
 		end
 		local setitemcount = FIXkuzumap_Popup:GetNumber()
-		local x,y = math.modf(setitemcount/itemcount)
-		if x == 0 or y ~= 0 then
-			x = x + 1
+		if addon.db.profile.settings.SellBood then
+			locbd.merch.ItemCount = itemcount
+			locbd.merch.ItemName = StaticPopup1ItemFrameText:GetText()
+			locbd.merch.CostBay = setitemcount
+			FIXkuzumap_Popup.text_right:SetText(" = " .. tostring(itemcount*setitemcount) .. " предметов.")
+		else
+			local x,y = math.modf(setitemcount/itemcount)
+			if x == 0 or y ~= 0 then
+				x = x + 1
+			end
+			locbd.merch.ItemCount = itemcount
+			locbd.merch.ItemName = StaticPopup1ItemFrameText:GetText()
+			locbd.merch.CostBay = x
+			FIXkuzumap_Popup.text_right:SetText(" = " .. tostring(x) .. " x |cff0070dd[Кровь Саргераса]|r")
 		end
-		locbd.merch.ItemCount = itemcount
-		locbd.merch.ItemName = StaticPopup1ItemFrameText:GetText()
-		locbd.merch.CostBay = x
-		FIXkuzumap_Popup.text_right:SetText(" = " .. tostring(x) .. " x |cff0070dd|Hitem:124124::::::::110:65:512:::110:::|h[Кровь Саргераса]|h|r")
  		
  	end)
  	
@@ -420,4 +461,12 @@ end
 
 function addon:SetGuildWispFix(info, newValue)
 	addon.db.profile.settings.GuildWispFix = newValue
+end
+
+function addon:GetSellBood(info)
+    return addon.db.profile.settings.SellBood
+end
+
+function addon:SetSellBood(info, newValue)
+	addon.db.profile.settings.SellBood = newValue
 end
