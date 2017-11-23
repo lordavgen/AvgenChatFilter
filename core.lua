@@ -72,6 +72,7 @@ local locbd = {
 	},
 }
 local tipscan = CreateFrame("GameTooltip", "TooltipScanKey",nil,"GameTooltipTemplate")
+local receptscan = CreateFrame("GameTooltip", "TooltipReceptScan",nil,"GameTooltipTemplate")
 
 local options = { 
     name = "Авген Чат Фильтр",
@@ -163,6 +164,9 @@ function addon:OnEnable()
 	if self.db.profile.optionA then
 		self.db.profile.playerName = UnitName("player")
 	end
+	
+	addon:RegisterChatCommand("купить", "Commands")
+	addon:RegisterChatCommand("tes", "Commands")
 	
 	ChatFrame_AddMessageEventFilter("CHAT_MSG_SYSTEM", addon.AvgenChatFilter)
 	ChatFrame_AddMessageEventFilter("CHAT_MSG_CHANNEL", addon.AvgenChatFilter)
@@ -366,7 +370,7 @@ function addon:_merchantmod_ed()
 						for i=1,100 do 
 							if locbd.merch.ItemName == GetMerchantItemInfo(i) then 
 								for g=1, locbd.merch.CostBay-1 do 
-									BuyMerchantItem(i,locbd.merch.ItemCount)
+									BuyMerchantItem(i)
 								end
 								locbd.merch.CostBay = nil
 								locbd.merch.ItemName = nil
@@ -407,6 +411,158 @@ function addon.AvgenChatFilter(frame, event, message, ...)
 	return false
 end
 
+function addon.asplit(str , razd)
+	local tab = {}
+	for i in string.gmatch(str, "([^"..razd.."]+)") do
+	   table.insert(tab, i)
+	end
+	return tab
+end
+
+function addon:Commands(arg)
+	local link = arg:match('(|c........|Henchant:.*|h|r)')
+	local mult = arg:match('|r%s(%d+)') or 1
+	
+	local CountBloodInBags = addon:GetCountItemInBags("Кровь Саргераса") 
+	local tradename = 'Илнея Кровавый Шип'
+	local Treagents = addon:GetReagents(link)
+	
+	if Treagents and MerchantNameText and MerchantNameText:IsVisible() then
+		if tradename == MerchantNameText:GetText() then
+			local Tquantity = {}
+			for i=1, GetMerchantNumItems() do
+				local name, _, _, quantity = GetMerchantItemInfo(i)
+				
+				for _, reg in ipairs(Treagents) do
+					if reg.name == name then 
+						Tquantity[name] = quantity or 0
+					end
+				end
+			end
+			
+			local Nmult = addon:NormalizeMultiple(Treagents,Tquantity,mult,CountBloodInBags)
+			
+			local a,b = 0,0
+			for _, reg in ipairs(Treagents) do
+				b = 0
+				if Tquantity[reg.name] then
+					if tonumber(Tquantity[reg.name]) > 0 then
+						b = ((tonumber(reg.count*Nmult)) /tonumber(Tquantity[reg.name]) )
+						b,y = math.modf(b)
+						if b == 0 or y ~= 0 then
+							b = b + 1
+						end
+					end
+				end
+				addon:BuyItem(reg.name,b)
+				print(string.format('\'%s\'x%d(%d) = %d',tostring(reg.name),tostring(reg.count),tostring(Tquantity[reg.name]),tostring(b)))
+				a = a + b
+			end
+			print('|cff0C71F5Всего надо|r '.. a .. ' |cff0C71F5Крови саргераса.|r')
+		else
+			print(string.format("|cff0C71F5%s|r: %s",tostring('Даларанский торговец'),tostring("Нужен торговец с именем \'"..tradename..'\'.')))
+		end
+	else
+		print(string.format("|cff0C71F5%s|r: %s",tostring('Даларанский торговец'),tostring("Реагентов в рецепте не найдено или окно торговца не открыто.")))
+	end
+end
+
+function addon:GetReagents(link)
+	if link:match("Henchant:") then
+		receptscan:SetOwner(UIParent, "ANCHOR_NONE")
+		receptscan:SetHyperlink(link)
+		receptscan:Show()
+		
+		local regi = _G['TooltipReceptScanTextLeft2']:GetText():match('.*:(.*)') or nil
+		receptscan:Hide()
+		local tab = {}
+		if regi then
+			for reg in string.gmatch(regi,"([^,]+)") do
+				
+				local a = string.find(reg, "%n")
+				if a then
+					reg = string.sub(reg, a+1,string.len(reg))
+				end
+				reg = reg:match('%s*(.*)')
+				
+				namenocolor = reg:match('|c........(.*)|r') or reg
+				name = namenocolor:match('(.*)%s+%(') or namenocolor
+				num = reg:match('%((%d+)%)') or 1
+				
+				table.insert(tab,{name = name, count = num})
+				
+			end
+			return tab
+		end
+	end
+	return nil
+end
+
+function addon:GetCountItemInBags(itemname)
+	local IC = 0
+	for b=0,4 do
+		for s=1,GetContainerNumSlots(b) do
+			_, count, _, _, _, _, link = GetContainerItemInfo(b,s)
+			if link then
+				if itemname == select(1, GetItemInfo(link)) then
+					IC = IC + count
+				end
+			end
+		end
+	end
+	return IC
+end
+
+function addon:NormalizeMultiple(Treagents,Tquantity,mult,CountBloodInBags)
+	local b = 0
+	local a = 0
+	local mult = mult
+	local fix = 0
+	while true do
+		-- print(string.format("|cffFF5400%s|r: %s",tostring('mult'),tostring(mult)))
+		fix =fix + 1
+		a = 0
+		for _, reg in ipairs(Treagents) do
+			b = 0
+			x = 0
+			y = 0
+			if Tquantity[reg.name] then
+				if tonumber(Tquantity[reg.name]) > 0 then
+					
+					b = ((tonumber(reg.count)*mult) /tonumber(Tquantity[reg.name]))
+					x,y = math.modf(b)
+					if x == 0 or y ~= 0 then
+						x = x + 1
+					end
+				end
+			end
+			-- print(string.format("|cffFF5400%s|r: %s",tostring('x'),tostring(x)))
+			a = a + x
+			-- print(string.format("|cffFF5400%s|r: %s",tostring('a'),tostring(a)))
+		end
+		
+		if fix > 200 then return nil end
+		if a < CountBloodInBags then break else mult = mult - 1 end
+	end
+	return mult
+end
+
+function addon:BuyItem(itemname,countBuy)
+	for i=1,GetMerchantNumItems() do
+		if itemname == GetMerchantItemInfo(i) then 
+			for g=1, countBuy do 
+				BuyMerchantItem(i)
+			end
+			break
+		end
+	end
+end
+
+function addon:F_Blank()
+	
+end
+
+-- Найстройки
 function addon:GetKeyFix(info)
     return addon.db.profile.settings.KeyFix
 end
